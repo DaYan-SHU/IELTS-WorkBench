@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RhodeIsland</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // 提前恢复用户设置（字体倍率 / 侧栏折叠），避免刷新时闪动
+    try {
+      var _fs = parseFloat(localStorage.getItem("ielts.fs"));
+      if (_fs >= 0.7 && _fs <= 1.6) document.documentElement.style.setProperty("--fs", _fs);
+      if (localStorage.getItem("ielts.rail") === "1") document.documentElement.classList.add("rail-collapsed");
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="app">
+    <!-- ===== 左侧：全高侧边导航栏 ===== -->
+    <aside class="nav-rail" aria-label="主导航">
+      <div class="rail-top">
+        <button id="brand" class="brand" type="button" title="点击回到初始状态">
+          <span class="brand-full">RhodeIsland</span>
+          <span class="brand-mini"></span>
+        </button>
+        <button id="railToggle" class="rail-toggle" type="button" title="收起侧栏">&laquo;</button>
+      </div>
+
+      <div class="rail-scroll">
+        <nav class="rail-nav">
+          <button class="nav-item active" data-view="library" type="button">
+            <span class="nav-ico"></span><span class="nav-label">资料库</span>
+          </button>
+          <button class="nav-item" data-view="plan" type="button">
+            <span class="nav-ico"></span><span class="nav-label">计划</span>
+          </button>
+          <button class="nav-item" data-view="practice" type="button">
+            <span class="nav-ico"></span><span class="nav-label">练习</span>
+          </button>
+        </nav>
+
+        <div id="railFilters" class="rail-filters">
+          <div class="panel">
+            <div class="panel-head"><h3>科目</h3><span class="caret"></span></div>
+            <div class="panel-body"><ul id="categories" class="list"></ul></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>文件类型</h3><span class="caret"></span></div>
+            <div class="panel-body"><ul id="kinds" class="list"></ul></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>文件夹</h3><span class="caret"></span></div>
+            <div class="panel-body">
+              <select id="folder" class="select">
+                <option value="">全部文件夹</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bottom">
+        <div class="user" title="当前用户">
+          <span class="avatar">M</span><span class="user-name">Muelsyse</span>
+        </div>
+        <div class="settings-wrap">
+          <div id="fsPop" class="fs-pop" hidden>
+            <div class="fs-row">
+              <span class="fs-label">字体大小</span>
+              <div class="fs-ctrl">
+                <button id="fsMinus" type="button" title="缩小 0.1">&minus;</button>
+                <span id="fsVal">1.0×</span>
+                <button id="fsPlus" type="button" title="放大 0.1">+</button>
+              </div>
+            </div>
+          </div>
+          <button id="settingsBtn" class="settings-btn" type="button" title="设置">
+            <span class="gear">&#9881;&#xFE0E;</span><span class="nav-label">设置</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== 右侧：内容区（结构不变） ===== -->
+    <div class="content">
+      <header class="topbar">
+        <div class="search">
+          <input id="q" type="text" placeholder="搜索文件名或文件夹…" autocomplete="off">
+        </div>
+        <div class="actions">
+          <button id="refresh" class="btn" title="重新扫描资料目录">刷新索引</button>
+        </div>
+      </header>
+
+      <main id="viewLibrary" class="view main">
+        <div id="stats" class="stats"></div>
+        <div class="toolbar">
+          <label class="sort-label">排序
+            <select id="sort" class="select">
+              <option value="kind" selected>文件类型</option>
+              <option value="name">文件名</option>
+              <option value="mtime">最近修改</option>
+              <option value="size">大小</option>
+            </select>
+          </label>
+          <div class="page-wrap">
+            <button id="pageToggle" class="page-toggle">20 条/页</button>
+            <div id="pageDropdown" class="dropdown">
+              <div class="dd-option" data-n="20">20 条/页</div>
+              <div class="dd-option" data-n="50">50 条/页</div>
+              <div class="dd-option" data-n="100">100 条/页</div>
+              <div class="dd-option" data-n="150">150 条/页</div>
+              <div class="dd-option" data-n="200">200 条/页</div>
+            </div>
+          </div>
+          <span id="count" class="count"></span>
+        </div>
+        <div id="grid"></div>
+        <button id="loadMore" class="load-more" style="display:none">加载更多</button>
+        <div id="empty" class="empty" hidden>没有找到匹配的文件</div>
+      </main>
+
+      <section id="planView" class="view" hidden>
+        <div class="plan-container">
+          <div class="plan-top">
+            <div class="date-nav">
+              <button id="prevDay" class="btn" title="前一天">前一天</button>
+              <input type="date" id="planDate" class="select date-input">
+              <button id="nextDay" class="btn" title="后一天">后一天</button>
+            </div>
+            <div id="planStats" class="stats"></div>
+          </div>
+          <div id="weekBar" class="week"></div>
+          <div class="plan-add">
+            <select id="planSubject" class="select plan-subject"><option value="">科目（可选）</option></select>
+            <input id="planTitle" type="text" placeholder="要做什么？例如：做一套剑桥听力 + 精听" autocomplete="off">
+            <button id="planAdd" class="btn btn-primary">添加</button>
+          </div>
+          <div id="planList" class="plan-list"></div>
+          <div id="planEmpty" class="empty" hidden>这一天还没有计划，添加一个开始吧</div>
+        </div>
+      </section>
+
+      <section id="practiceView" class="view" hidden>
+        <div class="practice-container">
+          <div class="practice-top">
+            <div class="practice-source">
+              <label>词库</label>
+              <select id="wordSource" class="select"></select>
+            </div>
+            <div class="practice-source">
+              <label>范围</label>
+              <select id="wordFilter" class="select">
+                <option value="">全部单词</option>
+                <option value="todo">未掌握（未学+不认识）</option>
+                <option value="fresh">未学</option>
+                <option value="unknown">不认识</option>
+                <option value="known">已认识</option>
+              </select>
+            </div>
+            <div id="wordStats" class="stats"></div>
+          </div>
+          <div id="flashcard" class="flashcard" title="点击翻面">
+            <div class="flashcard-inner">
+              <div class="flashcard-face flashcard-front"><span id="cardFront"></span></div>
+              <div class="flashcard-face flashcard-back"><span id="cardBack"></span></div>
+            </div>
+          </div>
+          <div class="flashcard-hint">点击卡片翻面查看释义</div>
+          <div class="flashcard-controls">
+            <button id="wordUnknown" class="btn">不认识</button>
+            <button id="wordShuffle" class="btn btn-ghost" title="随机打乱">打乱</button>
+            <button id="wordKnown" class="btn btn-primary">认识</button>
+          </div>
+          <div class="flashcard-progress">
+            <span id="wordPos" class="word-pos">0 / 0</span>
+            <div class="progress-bar"><div id="wordProgressFill" class="progress-fill"></div></div>
+          </div>
+          <div id="wordEmpty" class="empty" hidden>这个词库还没有单词</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-head">
+      <div id="modalTitle" class="modal-title"></div>
+      <div class="modal-actions">
+        <button id="openBtn" class="btn">打开</button>
+        <button id="closeBtn" class="btn btn-ghost">关闭</button>
+      </div>
+    </div>
+    <div id="modalBody" class="modal-body"></div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="plan.js"></script>
+  <script src="practice.js"></script>
+</body>
+</html>

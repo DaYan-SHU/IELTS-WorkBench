@@ -1,0 +1,23 @@
+# Python 运行环境与缓存
+__pycache__/
+*.pyc
+.venv/
+venv/
+runtime/
+
+# IDE
+.idea/
+.vscode/
+
+# 学习数据（仅保存在本地，启动时自动备份 .bak）
+ielts.db
+ielts.db.bak
+data/
+
+# 工具与可执行文件
+tools/
+*.exe
+
+# 系统文件
+Thumbs.db
+desktop.ini
